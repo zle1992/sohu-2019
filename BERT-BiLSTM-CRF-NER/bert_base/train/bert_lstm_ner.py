@@ -5,20 +5,27 @@ import tensorflow as tf
 import codecs
 import pickle
 
-from bert_base.train import tf_metrics
-from bert_base.bert import modeling
-from bert_base.bert import optimization
-from bert_base.bert import tokenization
 
-# import
-
-from bert_base.train.models import create_model, InputFeatures, InputExample
 
 
 import sys
-sys.path.append('/home/gpu401/lab/bigdata/sohu-2019/BERT-BiLSTM-CRF-NER/')
-sys.path.append('/home/gpu401/lab/bigdata/sohu-2019/common')
+sys.path.append('../../')
+sys.path.append('../../common')
 from util import *
+sys.path.append('../../bert_base')
+from train import tf_metrics
+from bert import modeling, optimization,tokenization
+# import
+from train.models import create_model, InputFeatures, InputExample
+
+
+# from bert_base.train import tf_metrics
+# from bert_base.bert import modeling, optimization,tokenization
+
+# # import
+
+# from bert_base.train.models import create_model, InputFeatures, InputExample
+
 
 
 import logging  
