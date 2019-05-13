@@ -13,10 +13,11 @@ sys.path.append('../../../../')
 sys.path.append('../../../../common')
 from util import *
 sys.path.append('../../bert_base')
-from train import tf_metrics
+sys.path.append('../../bert_base/train')
+import tf_metrics
 from bert import modeling, optimization,tokenization
 # import
-from train.models import create_model, InputFeatures, InputExample
+from models import create_model, InputFeatures, InputExample
 
 
 # from bert_base.train import tf_metrics
