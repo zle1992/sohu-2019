@@ -6,7 +6,8 @@
  @Author  : MaCan (ma_cancan@163.com)
  @File    : models.py
 """
-import BLSTM_CRF
+
+from lstm_crf_layer import BLSTM_CRF
 from tensorflow.contrib.layers.python.layers import initializers
 
 
