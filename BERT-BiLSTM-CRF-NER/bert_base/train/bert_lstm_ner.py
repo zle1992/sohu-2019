@@ -12,19 +12,13 @@ import sys
 sys.path.append('../../../../')
 sys.path.append('../../../../common')
 from util import *
-sys.path.append('../../bert_base')
-sys.path.append('../../bert_base/train')
-import tf_metrics
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))#存放c.py所在的绝对路径
-
-sys.path.append(BASE_DIR)
 
 sys.path.append('../../bert_base/train/bert')
 import modeling, optimization,tokenization
 # import
 from models import create_model, InputFeatures, InputExample
-
+import tf_metrics
 
 # from bert_base.train import tf_metrics
 # from bert_base.bert import modeling, optimization,tokenization
