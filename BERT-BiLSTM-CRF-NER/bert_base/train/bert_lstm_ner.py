@@ -9,8 +9,8 @@ import pickle
 
 
 import sys
-sys.path.append('../../')
-sys.path.append('../../common')
+sys.path.append('../../../../')
+sys.path.append('../../../../common')
 from util import *
 sys.path.append('../../bert_base')
 from train import tf_metrics
