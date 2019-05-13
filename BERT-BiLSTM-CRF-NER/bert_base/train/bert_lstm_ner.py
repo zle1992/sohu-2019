@@ -152,7 +152,10 @@ flags.DEFINE_string(
     "rep", " ",
     "The input data dir. Should contain the .tsv files (or other data files) "
     "for the task.")
-
+flags.DEFINE_string(
+    "root_path", "/home/gpu401/lab/bigdata/sohu-2019",
+    "The input data dir. Should contain the .tsv files (or other data files) "
+    "for the task.")
 
 class DataProcessor(object):
     """Base class for data converters for sequence classification data sets."""
@@ -338,7 +341,7 @@ class SOHUNERProcessor(DataProcessor):
       
       output_predict_file = os.path.join(FLAGS.output_dir, "bert_res.txt")
       
-      path = '/home/gpu401/lab/bigdata/sohu-2019/data/coreEntityEmotion_sample_submission_v2.txt'
+      path = FLAGS.root_path+'/data/coreEntityEmotion_sample_submission_v2.txt'
       df1 =pd.read_csv(path,names=['newsId','entity','emotion'],sep='\t')
 
 
