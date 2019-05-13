@@ -15,7 +15,7 @@ from util import *
 sys.path.append('../../bert_base')
 sys.path.append('../../bert_base/train')
 import tf_metrics
-from bert import modeling, optimization,tokenization
+from bert_base.bert import modeling, optimization,tokenization
 # import
 from models import create_model, InputFeatures, InputExample
 
