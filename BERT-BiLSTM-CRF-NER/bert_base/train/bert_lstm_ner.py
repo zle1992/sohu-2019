@@ -14,7 +14,7 @@ sys.path.append('../../../../common')
 from util import *
 
 
-sys.path.append('../../bert_base/train/bert')
+sys.path.append('../../../bert_base/bert')
 import modeling, optimization,tokenization
 # import
 from models import create_model, InputFeatures, InputExample
