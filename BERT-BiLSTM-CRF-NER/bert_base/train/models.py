@@ -6,8 +6,7 @@
  @Author  : MaCan (ma_cancan@163.com)
  @File    : models.py
 """
-
-from bert_base.train.lstm_crf_layer import BLSTM_CRF
+import BLSTM_CRF
 from tensorflow.contrib.layers.python.layers import initializers
 
 
