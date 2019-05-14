@@ -79,7 +79,9 @@ def create_model(bert_config, is_training, input_ids, input_mask,
     """
     # 使用数据加载BertModel,获取对应的字embedding
     import tensorflow as tf
-    from bert_base.bert import modeling
+    #from bert_base.bert import modeling
+    sys.path.append('../../../bert_base/bert')
+    import modeling
     model = modeling.BertModel(
         config=bert_config,
         is_training=is_training,
