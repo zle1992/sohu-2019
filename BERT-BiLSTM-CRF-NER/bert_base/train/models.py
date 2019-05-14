@@ -88,7 +88,7 @@ def create_model(bert_config, is_training, input_ids, input_mask,
         input_ids=input_ids,
         input_mask=input_mask,
         token_type_ids=segment_ids,
-        use_one_hot_embeddings=False,#use_one_hot_embeddings
+        use_one_hot_embeddings=True,#use_one_hot_embeddings
     )
     # 获取对应的embedding 输入数据[batch_size, seq_length, embedding_size]
     embedding = model.get_sequence_output()

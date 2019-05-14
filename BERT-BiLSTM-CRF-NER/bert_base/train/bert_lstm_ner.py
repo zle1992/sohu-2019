@@ -35,11 +35,6 @@ logging.basicConfig(level=logging.INFO,
 
 
 
-
-
-bert_path = '../chinese_L-12_H-768_A-12/'
-root_path = '../BERT-BiLSTM-CRF-NER'
-
 flags = tf.flags
 
 FLAGS = flags.FLAGS
@@ -52,17 +47,17 @@ flags.DEFINE_string("vocab_file", None,
                     "The vocabulary file that the BERT model was trained on.")
 ## Required parameters
 flags.DEFINE_string(
-    "data_dir", os.path.join(root_path, 'NERdata'),
+    "data_dir",  'NERdata',
     "The input data dir. Should contain the .tsv files (or other data files) "
     "for the task.")
 ## Required parameters
 flags.DEFINE_string(
-    "bert_config_file", os.path.join(bert_path, 'bert_config.json'),
+    "bert_config_file", 'bert_config.json',
     "The input data dir. Should contain the .tsv files (or other data files) "
     "for the task.")
 
 flags.DEFINE_string(
-    "output_dir", os.path.join(root_path, 'output'),
+    "output_dir",  'output',
     "The input data dir. Should contain the .tsv files (or other data files) "
     "for the task.")
 
@@ -233,9 +228,9 @@ class SOHUNERProcessor(DataProcessor):
     self.train_df = pd.read_pickle(train_path)
 
     k = int(len(self.train_df)*0.05)
-    train_df = self.train_df.sample(frac =1)
+    train_df = self.train_df[:-k].sample(frac =1,random_state=2019)
 
-
+    train_df = self.df_process(train_df)
     #train_df=self.title_filter(train_df)
 
     return self._create_examples(train_df,"train")
@@ -244,7 +239,8 @@ class SOHUNERProcessor(DataProcessor):
     """See base class."""
     k = int(len(self.train_df)*0.05)
 
-    dev_df = self.train_df[-k:].sample(frac =1)
+    dev_df = self.train_df[-k:].sample(frac =1,random_state=2019)
+    dev_df = self.df_process(dev_df)
     #dev_df=self.title_filter(dev_df)
     return self._create_examples(dev_df, "dev")
 
@@ -257,7 +253,7 @@ class SOHUNERProcessor(DataProcessor):
             
             k = int(len(df_train)*0.05)
             
-            self.test_df =  df_train[:100]#df_train[-k:]
+            self.test_df =  df_train[-k:]#df_train[-k:]
         if FLAGS.trainisdev:
             self.test_df = pd.read_pickle(FLAGS.train_path)
             #self.test_df=self.title_filter(self.test_df)
@@ -268,7 +264,7 @@ class SOHUNERProcessor(DataProcessor):
         self.test_df = pd.read_pickle(test_path)
 
 
-    
+    self.test_df = self.df_process(self.test_df)
     return self._create_examples(self.test_df, "test")
 
   def get_labels(self):
@@ -284,7 +280,6 @@ class SOHUNERProcessor(DataProcessor):
   def _create_examples(self, df, set_type):
     """Creates examples for the training and dev sets."""
 
-    df = self.df_process(df)
     examples = []
 
     for (i, line) in df.iterrows():
@@ -302,10 +297,9 @@ class SOHUNERProcessor(DataProcessor):
 
   def submit(self,texts,label_preds):
     df_test = self.test_df 
-    df_test = self.df_process(df_test)
     print(df_test.shape)
     #复赛rep=',' 初赛rep=' '
-    print(df_test['labels'][0])
+    print(df_test['labels'].values[0])
     print(label_preds[0])
     res = decoder(label_preds,texts,FLAGS.label_type)
     print(len(res))
@@ -315,23 +309,20 @@ class SOHUNERProcessor(DataProcessor):
 
     if not FLAGS.title_only:
       df_test=postposs(df_test,rep=FLAGS.rep)
-    df_test['entity_pred_all'] = df_test['entity_pred'].map(lambda x:post(x,rep=FLAGS.rep))
-    
-    df_test['entity_pred_temp'] = df_test['entity_pred']
-    df_test['entity_pred'] = df_test['entity_pred_all']
-    df_test['entity_pred_all'] = df_test['entity_pred_temp']
+    df_test['entity_sub'] = df_test['entity_pred'].map(lambda x:post(x,rep=FLAGS.rep))
 
 
 
     logging.info('predict res:')
     if FLAGS.title_only:
-        print(df_test[['entity','title','entity_pred']].head())
+        print(df_test[['entity','title','entity_sub']].head())
 
     else:
-        print(df_test[['entity','entity_pred']].head())
-
-    df_test['emotion_pred']=df_test.apply(lambda x:['POS']*len(x['entity_pred']),axis=1)
-    df_test['entity_pred'] = df_test['entity_pred'].map(lambda x:','.join(x))
+        print(df_test[['entity','entity_sub']].head())
+    df_test['entity_sub'] = df_test['entity_sub'].map(lambda x:[i for i in x if i!=''])
+    print(df_test['entity_sub'].map(lambda x:len(x)))
+    df_test['emotion_pred']=df_test.apply(lambda x:['POS']*len(x['entity_sub']),axis=1)
+    df_test['entity_sub'] = df_test['entity_sub'].map(lambda x:','.join(x))
     df_test['emotion_pred'] = df_test['emotion_pred'].map(lambda x:','.join(x))
 
 
@@ -339,11 +330,11 @@ class SOHUNERProcessor(DataProcessor):
     if FLAGS.testisdev or FLAGS.trainisdev:
 
       reals = df_test.entity.map(lambda x:x.split(',')).values
-      preds = df_test.entity_pred.map(lambda x:x.split(FLAGS.rep)).values
+      preds = df_test.entity_sub.map(lambda x:x.split(FLAGS.rep)).values
       p,r,f1=score(reals,preds)
       output_predict_file = os.path.join(FLAGS.output_dir, "bert_dev_ortrain.txt")
       
-      df_test[['newsId','entity','entity_pred','entity_pred_all']].to_csv(output_predict_file, sep='\t',index=False,header=False)
+      df_test[['newsId','entity','entity_sub','entity_pred']].to_csv(output_predict_file, sep='\t',index=False,header=False)
 
     else:
       
@@ -355,11 +346,11 @@ class SOHUNERProcessor(DataProcessor):
 
         
 
-      df_test = pd.merge(df1[['newsId']],df_test[['newsId','entity_pred','emotion_pred','entity_pred_all']],how='left')
+      df_test = pd.merge(df1[['newsId']],df_test[['newsId','entity_sub','emotion_pred','entity_pred']],how='left')
 
-      df_test[['newsId','entity_pred','entity_pred_all','emotion_pred']].to_csv(output_predict_file+'.all_pred.csv',sep='\t',index=False,header=False)
+      df_test[['newsId','entity_sub','entity_pred','emotion_pred']].to_csv(output_predict_file+'.all_pred.csv',sep='\t',index=False,header=False)
 
-      df_test[['newsId','entity_pred','emotion_pred']].to_csv(output_predict_file, sep='\t',index=False,header=False)
+      df_test[['newsId','entity_sub','emotion_pred']].to_csv(output_predict_file, sep='\t',index=False,header=False)
 
       logging.info('test_predict done! and save in %s'%(output_predict_file))
 
