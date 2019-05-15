@@ -146,16 +146,16 @@ def decoder(text_ids,texts,flag='234'):
 
 
 from collections import Counter
-def post(x,rep= ' '):
+def post(x):
     #格式处理：c
     x = np.array(x).flatten().tolist()
-    x=rep.join(x)
-    x = x.split(rep) 
+    x=','.join(x)
+    x = x.split(',') 
     #过滤
 
     return[i[0] for i in  Counter(x).most_common(3)]
 
-def postposs(df,rep=' '):
+def postposs(df,):
   '''
 
   聚合结果
@@ -165,7 +165,7 @@ def postposs(df,rep=' '):
   print(list(df))
   feat_agg = ['entity_pred','entity',]
   gg = df.groupby(['newsId'])
-  df_agg = gg[feat_agg[0]].apply(lambda x:rep.join(x)).reset_index()
+  df_agg = gg[feat_agg[0]].apply(lambda x:','.join(x)).reset_index()
   for f in feat_agg:
       df_agg[f] = gg[f].apply(list).reset_index()[f]
   df_agg['entity']= df_agg['entity'].map(lambda x:x[0])
@@ -185,8 +185,9 @@ def score(reals,preds):
     score([['a'],['a','b']],[['b'],['a']])
     '''
     pl,rl,f1l=[],[],[]
-    for real,pred in zip(reals,preds):
-      
+    for real_s,pred_s in zip(reals,preds):
+        real = real_s.split(',')
+        pred = pred_s.split(',')
         tp =float(len(set(pred)&set(real)))
         p=tp/len(pred)+0.000001
         r=tp/len(real)+0.000001

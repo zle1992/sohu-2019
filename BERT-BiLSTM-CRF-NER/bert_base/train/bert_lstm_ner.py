@@ -33,7 +33,11 @@ import logging
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(filename)s[line:%(lineno)d] - %(levelname)s: %(message)s')  # 
 
-
+import tensorflow as tf  
+import os  
+config = tf.ConfigProto()   
+config.gpu_options.allow_growth = True      #程序按需申请内存  
+sess = tf.Session(config = config)
 
 flags = tf.flags
 
@@ -195,7 +199,7 @@ class SOHUNERProcessor(DataProcessor):
 
   def title_filter(self,df):
     
-    df = df[df.apply(lambda x:find(x),axis=1)]
+    df = df[df.apply(lambda x:find(x,sep=FLAGS.sep),axis=1)]
       
     return df
   def df_process(self,df):
@@ -205,17 +209,19 @@ class SOHUNERProcessor(DataProcessor):
     if FLAGS.title_only :
       df['texts']=df['title']
 
-    print(df.head())
+    if FLAGS.rep==' ':    
+        df['texts']=df['texts'].map(lambda x:x.replace(' ',''))
+        #转换成复赛的格式
+        df['entity'] = df['entity'].map(lambda x:x.replace(' ',','))
 
     #rep=',' 复赛连接符号。 只有text2id 才会用到rep!!!!!!
     df['labels']=df.apply(lambda x:text2id(x,col='texts',flag=FLAGS.label_type,rep=FLAGS.rep),axis=1)
-    df['texts']=df['texts'].map(lambda x:list(x))
-
     
+    df['texts']=df['texts'].map(lambda x:list(x))
     df['texts'] = df['texts'].map(lambda x:' '.join(x))
     df['labels'] = df['labels'].map(lambda x:' '.join([str(i)for i in x]))
 
-
+    print(df.head())
     return df
 
 
@@ -252,7 +258,6 @@ class SOHUNERProcessor(DataProcessor):
             df_train=pd.read_pickle(FLAGS.train_path)[:]
             
             k = int(len(df_train)*0.05)
-            
             self.test_df =  df_train[-k:]#df_train[-k:]
         if FLAGS.trainisdev:
             self.test_df = pd.read_pickle(FLAGS.train_path)
@@ -298,39 +303,50 @@ class SOHUNERProcessor(DataProcessor):
   def submit(self,texts,label_preds):
     df_test = self.test_df 
     print(df_test.shape)
-    #复赛rep=',' 初赛rep=' '
+    
     print(df_test['labels'].values[0])
     print(label_preds[0])
     res = decoder(label_preds,texts,FLAGS.label_type)
-    print(len(res))
-    print(res[0])
+
+
+    logging.info("res[0]:%s"%(res[0]))
     logging.info('submit res len:%d'%len(res))
     df_test['entity_pred']=res
 
-    if not FLAGS.title_only:
-      df_test=postposs(df_test,rep=FLAGS.rep)
-    df_test['entity_sub'] = df_test['entity_pred'].map(lambda x:post(x,rep=FLAGS.rep))
+    #聚合结果
+    df_test=postposs(df_test)
 
+    df_test['entity_sub'] = df_test['entity_pred'].map(lambda x:post(x))
 
+    logging.info('entity_sub:%d'%len(res))
 
     logging.info('predict res:')
+    
+
+
+
+    df_test['entity_sub'] = df_test['entity_sub'].map(lambda x:[i for i in x if i!=''])
+
+    #print(df_test['entity_sub'].map(lambda x:len(x)))
+
+    df_test['emotion_pred']=df_test.apply(lambda x:['POS']*len(x['entity_sub']),axis=1)
+    
+
+    df_test['entity_sub'] = df_test['entity_sub'].map(lambda x:','.join(x))
+    df_test['emotion_pred'] = df_test['emotion_pred'].map(lambda x:','.join(x))
+
+
     if FLAGS.title_only:
         print(df_test[['entity','title','entity_sub']].head())
 
     else:
         print(df_test[['entity','entity_sub']].head())
-    df_test['entity_sub'] = df_test['entity_sub'].map(lambda x:[i for i in x if i!=''])
-    print(df_test['entity_sub'].map(lambda x:len(x)))
-    df_test['emotion_pred']=df_test.apply(lambda x:['POS']*len(x['entity_sub']),axis=1)
-    df_test['entity_sub'] = df_test['entity_sub'].map(lambda x:','.join(x))
-    df_test['emotion_pred'] = df_test['emotion_pred'].map(lambda x:','.join(x))
-
 
 
     if FLAGS.testisdev or FLAGS.trainisdev:
 
-      reals = df_test.entity.map(lambda x:x.split(',')).values
-      preds = df_test.entity_sub.map(lambda x:x.split(FLAGS.rep)).values
+      reals = df_test.entity.values
+      preds = df_test.entity_sub.values
       p,r,f1=score(reals,preds)
       output_predict_file = os.path.join(FLAGS.output_dir, "bert_dev_ortrain.txt")
       
