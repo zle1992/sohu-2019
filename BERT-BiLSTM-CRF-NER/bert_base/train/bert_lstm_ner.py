@@ -210,18 +210,23 @@ class SOHUNERProcessor(DataProcessor):
       df['texts']=df['title']
 
     if FLAGS.rep==' ':    
-        df['texts']=df['texts'].map(lambda x:x.replace(' ',''))
+        
         #转换成复赛的格式
         df['entity'] = df['entity'].map(lambda x:x.replace(' ',','))
 
+    df['texts']=df['texts'].map(lambda x:x.replace(',','，'))
+    
     #rep=',' 复赛连接符号。 只有text2id 才会用到rep!!!!!!
     df['labels']=df.apply(lambda x:text2id(x,col='texts',flag=FLAGS.label_type,rep=FLAGS.rep),axis=1)
     
     df['texts']=df['texts'].map(lambda x:list(x))
-    df['texts'] = df['texts'].map(lambda x:' '.join(x))
-    df['labels'] = df['labels'].map(lambda x:' '.join([str(i)for i in x]))
+    df['texts'] = df['texts'].map(lambda x:','.join(x))
+    df['labels'] = df['labels'].map(lambda x:','.join([str(i)for i in x]))
 
     print(df.head())
+    # print(df.head()['texts'].map(lambda x:len(x.split(','))))
+    # print(df.head()['labels'].map(lambda x:len(x.split(','))))
+
     return df
 
 
@@ -463,8 +468,8 @@ def convert_single_example(ex_index, example, label_list, max_seq_length, tokeni
         with codecs.open(os.path.join(output_dir, 'label2id.pkl'), 'wb') as w:
             pickle.dump(label_map, w)
 
-    textlist = example.text.split(' ')
-    labellist = example.label.split(' ')
+    textlist = example.text.split(',')
+    labellist = example.label.split(',')
     tokens = []
     labels = []
     for i, word in enumerate(textlist):
