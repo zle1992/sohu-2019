@@ -60,7 +60,7 @@ def text2id(x,col='content',flag='233',rep=' '):
 
 
 
-def result_to_json(string, tags, ):
+def result_to_json_234(string, tags, ):
     item = {"string": string, "entities": []}
     entity_name = ""
     idx = 0
@@ -82,6 +82,29 @@ def result_to_json(string, tags, ):
         idx += 1
     return item
 
+def result_to_json_233(string, tags, ):
+
+    item = {"string": string, "entities": []}
+    entity_name = ""
+    idx = 0
+
+    for i, (char, tag) in enumerate(zip(string, tags)):
+        if tag[0] == "S":
+            item["entities"].append({"word": char, "start": idx, "end": idx + 1, "type": tag[2:]})
+        elif tag[0] == "B":
+            entity_name += char
+            for j in range(i + 1, len(tags)):
+                entity_name += string[j]
+                if tags[j][0] == 'I':
+                    item["entities"].append({"word": entity_name, "start": idx, "end": j + 1, "type": tag[2:]})
+                else:
+                    break
+            entity_name = ""
+        idx += 1
+    return item
+
+
+
 LAB_MAP = { "B": 2,"I": 3,"E": 4,"O":1}
 id2label = {0:'O',1:'O',2:'B',3:'I',4:'E'}
 
@@ -91,34 +114,24 @@ def decoder(text_ids,texts,flag='234'):
     string=['v','i','v','o','手','机']
     tags=['B-POS','I-POS','I-POS','E-POS','O','O']
     '''
-    if flag=='234':
-        final_res =[]
-        for i in range(len(texts)):
-            text = texts[i]
-            text_id =text_ids[i]
-            text_id = [id2label[i] for i in text_id]
+    
+    final_res =[]
+    for i in range(len(texts)):
+        text = texts[i]
+        text_id =text_ids[i]
+        text_id = [id2label[i] for i in text_id]
+        res =[]
 
-            res =[]
-            for info in result_to_json(text,text_id)['entities']:
-                res.append((info['word']))
-                final_res.append(','.join(res))
+        if flag=='234':
+          results = result_to_json_234(text,text_id)['entities']
+        else:
+          results = result_to_json_233(text,text_id)['entities']
 
-    if flag=='233':
-        final_res =[]
-        for i in range(len(texts)):
-            text = texts[i]
-            text_id =text_ids[i]
-            res=''
-            ll = min(len(text_id),len(text))
-            for j in range(ll):
-              if(text_id[j]==1 or text_id[j]==0):
-                  pass
-              else:
-                  if(text_id[j])==2:
-                      res =res+','+text[j]
-                  else:
-                      res=res+text[j]
-            final_res.append(res)
+        for info in results:
+          res.append((info['word']))
+          
+        final_res.append(','.join(res))
+
     return final_res
 
 

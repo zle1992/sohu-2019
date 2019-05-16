@@ -126,8 +126,9 @@ flags.DEFINE_bool("do_lower_case", True, "Whether to run eval on the dev set.")
 
 flags.DEFINE_bool("clean", None, "Whether to run eval on the dev set.")
 
-flags.DEFINE_bool("crf_only", True, "Whether to run eval on the dev set.")
-flags.DEFINE_bool("title_only", False, "Whether to run eval on the dev set.")
+flags.DEFINE_bool("crf_only", True, "Whether tcrf_only.")
+flags.DEFINE_bool("title_only", False, "Whether title_only.")
+flags.DEFINE_bool("bert_only", True, "Whether bert_only.")
 flags.DEFINE_string(
     "ner", "sohuner",
     "The input data dir. Should contain the .tsv files (or other data files) "
@@ -214,14 +215,14 @@ class SOHUNERProcessor(DataProcessor):
         #转换成复赛的格式
         df['entity'] = df['entity'].map(lambda x:x.replace(' ',','))
 
-    df['texts']=df['texts'].map(lambda x:x.replace(',','，'))
-    
+    df['texts']=df['texts'].map(lambda x:x.replace(' ',''))
+
     #rep=',' 复赛连接符号。 只有text2id 才会用到rep!!!!!!
     df['labels']=df.apply(lambda x:text2id(x,col='texts',flag=FLAGS.label_type,rep=FLAGS.rep),axis=1)
     
     df['texts']=df['texts'].map(lambda x:list(x))
-    df['texts'] = df['texts'].map(lambda x:','.join(x))
-    df['labels'] = df['labels'].map(lambda x:','.join([str(i)for i in x]))
+    df['texts'] = df['texts'].map(lambda x:' '.join(x))
+    df['labels'] = df['labels'].map(lambda x:' '.join([str(i)for i in x]))
 
     print(df.head())
     # print(df.head()['texts'].map(lambda x:len(x.split(','))))
@@ -312,7 +313,6 @@ class SOHUNERProcessor(DataProcessor):
     print(df_test['labels'].values[0])
     print(label_preds[0])
     res = decoder(label_preds,texts,FLAGS.label_type)
-
 
     logging.info("res[0]:%s"%(res[0]))
     logging.info('submit res len:%d'%len(res))
@@ -468,8 +468,8 @@ def convert_single_example(ex_index, example, label_list, max_seq_length, tokeni
         with codecs.open(os.path.join(output_dir, 'label2id.pkl'), 'wb') as w:
             pickle.dump(label_map, w)
 
-    textlist = example.text.split(',')
-    labellist = example.label.split(',')
+    textlist = example.text.split(' ')
+    labellist = example.label.split(' ')
     tokens = []
     labels = []
     for i, word in enumerate(textlist):
@@ -647,7 +647,7 @@ def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
         # 使用参数构建模型,input_idx 就是输入的样本idx表示，label_ids 就是标签的idx表示
         total_loss, logits, trans, pred_ids = create_model(
             bert_config, is_training, input_ids, input_mask, segment_ids, label_ids,
-            num_labels,FLAGS.crf_only, FLAGS.dropout_rate, FLAGS.lstm_size, FLAGS.cell, FLAGS.num_layers,)
+            num_labels,FLAGS.crf_only, FLAGS.dropout_rate, FLAGS.lstm_size, FLAGS.cell, FLAGS.num_layers,FLAGS.bert_only)
 
         tvars = tf.trainable_variables()
         # 加载BERT模型

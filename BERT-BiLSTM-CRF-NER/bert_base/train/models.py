@@ -62,7 +62,7 @@ class DataProcessor(object):
         raise NotImplementedError()
 
 
-def create_model(bert_config, is_training, input_ids, input_mask,
+def create_bert_crf_model(bert_config, is_training, input_ids, input_mask,
                  segment_ids, labels, num_labels,crf_only, #use_one_hot_embeddings,
                  dropout_rate, lstm_size, cell, num_layers):
     """
@@ -102,6 +102,85 @@ def create_model(bert_config, is_training, input_ids, input_mask,
                           seq_length=max_seq_length, labels=labels, lengths=lengths, is_training=is_training)
     rst = blstm_crf.add_blstm_crf_layer(crf_only=crf_only)
     return rst
+
+
+
+def create_bert_model(bert_config, is_training, input_ids, input_mask,
+                 segment_ids, labels, num_labels,crf_only, #use_one_hot_embeddings,
+                 dropout_rate, lstm_size, cell, num_layers):
+    """
+    创建X模型
+    :param bert_config: bert 配置
+    :param is_training:
+    :param input_ids: 数据的idx 表示
+    :param input_mask:
+    :param segment_ids:
+    :param labels: 标签的idx 表示
+    :param num_labels: 类别数量
+    :param use_one_hot_embeddings:
+    :return:
+    """
+    # 使用数据加载BertModel,获取对应的字embedding
+    import tensorflow as tf
+    #from bert_base.bert import modeling
+    sys.path.append('../../../bert_base/bert')
+    import modeling
+    model = modeling.BertModel(
+        config=bert_config,
+        is_training=is_training,
+        input_ids=input_ids,
+        input_mask=input_mask,
+        token_type_ids=segment_ids,
+        use_one_hot_embeddings=True,#use_one_hot_embeddings
+    )
+    # 获取对应的embedding 输入数据[batch_size, seq_length, embedding_size]
+    output_layer = model.get_sequence_output()
+    max_seq_length = output_layer.shape[1].value
+
+    hidden_size = output_layer.shape[-1].value
+
+    output_weight = tf.get_variable(
+        "output_weights", [num_labels, hidden_size],
+        initializer=tf.truncated_normal_initializer(stddev=0.02)
+    )
+    output_bias = tf.get_variable(
+        "output_bias", [num_labels], initializer=tf.zeros_initializer()
+    )
+    with tf.variable_scope("loss"):
+        if is_training:
+            output_layer = tf.nn.dropout(output_layer, keep_prob=0.9)
+        output_layer = tf.reshape(output_layer, [-1, hidden_size])
+        logits = tf.matmul(output_layer, output_weight, transpose_b=True)
+        logits = tf.nn.bias_add(logits, output_bias)
+        logits = tf.reshape(logits, [-1, max_seq_length, 11])
+        # mask = tf.cast(input_mask,tf.float32)
+        # loss = tf.contrib.seq2seq.sequence_loss(logits,labels,mask)
+        # return (loss, logits, predict)
+        ##########################################################################
+        log_probs = tf.nn.log_softmax(logits, axis=-1)
+        one_hot_labels = tf.one_hot(labels, depth=num_labels, dtype=tf.float32)
+        per_example_loss = -tf.reduce_sum(one_hot_labels * log_probs, axis=-1)
+        loss = tf.reduce_sum(per_example_loss)
+        probabilities = tf.nn.softmax(logits, axis=-1)
+        predict = tf.argmax(probabilities,axis=-1)
+        return (loss, per_example_loss, logits,predict)
+        ##########################################################################
+    return rst
+
+
+
+def create_model(bert_config, is_training, input_ids, input_mask,
+                 segment_ids, labels, num_labels,crf_only, #use_one_hot_embeddings,
+                 dropout_rate, lstm_size, cell, num_layers,bert_only=False,):
+
+    if bert_only:
+        return create_bert_crf_model(bert_config, is_training, input_ids, input_mask,
+                 segment_ids, labels, num_labels,crf_only, #use_one_hot_embeddings,
+                 dropout_rate, lstm_size, cell, num_layers)
+    else:
+        return create_bert_model(bert_config, is_training, input_ids, input_mask,
+                 segment_ids, labels, num_labels,crf_only, #use_one_hot_embeddings,
+                 dropout_rate, lstm_size, cell, num_layers)
 
 
 def create_classification_model(bert_config, is_training, input_ids, input_mask, segment_ids, labels, num_labels):
