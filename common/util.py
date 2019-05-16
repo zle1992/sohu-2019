@@ -87,22 +87,39 @@ id2label = {0:'O',1:'O',2:'B',3:'I',4:'E'}
 
 
 def decoder(text_ids,texts,flag='234'):
-  '''
-  string=['v','i','v','o','手','机']
-  tags=['B-POS','I-POS','I-POS','E-POS','O','O']
-  '''
+    '''
+    string=['v','i','v','o','手','机']
+    tags=['B-POS','I-POS','I-POS','E-POS','O','O']
+    '''
+    if flag=='234':
+        final_res =[]
+        for i in range(len(texts)):
+            text = texts[i]
+            text_id =text_ids[i]
+            text_id = [id2label[i] for i in text_id]
 
-  final_res =[]
-  for i in range(len(texts)):
-      text = texts[i]
-      text_id =text_ids[i]
-      text_id = [id2label[i] for i in text_id]
+            res =[]
+            for info in result_to_json(text,text_id)['entities']:
+                res.append((info['word']))
+                final_res.append(','.join(res))
 
-      res =[]
-      for info in result_to_json(text,text_id)['entities']:
-        res.append((info['word']))
-      final_res.append(','.join(res))
-  return final_res
+    if flag=='233':
+        final_res =[]
+        for i in range(len(texts)):
+            text = texts[i]
+            text_id =text_ids[i]
+            res=''
+            ll = min(len(text_id),len(text))
+            for j in range(ll):
+              if(text_id[j]==1 or text_id[j]==0):
+                  pass
+              else:
+                  if(text_id[j])==2:
+                      res =res+','+text[j]
+                  else:
+                      res=res+text[j]
+            final_res.append(res)
+    return final_res
 
 
 
@@ -126,23 +143,23 @@ def decoder(text_ids,texts,flag='234'):
 
 
 
-# def decoder(text_ids,texts):
-#   final_res =[]
-#   for i in range(len(texts)):
-#       text = texts[i]
-#       text_id =text_ids[i]
-#       res = ''
-#       ll = min(len(text_id),len(text))
-#       for j in range(ll):
-#           if(text_id[j]==1 or text_id[j]==0):
-#               pass
-#           else:
-#               if(text_id[j])==2:
-#                   res =res+' '+text[j]
-#               else:
-#                   res=res+text[j]
-#       final_res.append(res)
-#   return final_res
+def my_decoder(text_ids,texts):
+  final_res =[]
+  for i in range(len(texts)):
+      text = texts[i]
+      text_id =text_ids[i]
+      res = ''
+      ll = min(len(text_id),len(text))
+      for j in range(ll):
+          if(text_id[j]==1 or text_id[j]==0):
+              pass
+          else:
+              if(text_id[j])==2:
+                  res =res+' '+text[j]
+              else:
+                  res=res+text[j]
+      final_res.append(res)
+  return final_res
 
 
 from collections import Counter

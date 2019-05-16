@@ -35,9 +35,9 @@ logging.basicConfig(level=logging.INFO,
 
 import tensorflow as tf  
 import os  
-config = tf.ConfigProto()   
-config.gpu_options.allow_growth = True      #程序按需申请内存  
-sess = tf.Session(config = config)
+#config = tf.ConfigProto()   
+#config.gpu_options.allow_growth = True      #程序按需申请内存  
+#sess = tf.Session(config = config)
 
 flags = tf.flags
 

@@ -43,10 +43,20 @@ def SBC2DBC(ustring):
             inside_code += 0xfee0
         rstring += chr(inside_code)
     return rstring
-
+# 全角转半角
+def q_to_b(q_str):
+    b_str = ""
+    for uchar in q_str:
+        inside_code = ord(uchar)
+        if inside_code == 12288:  # 全角空格直接转换
+            inside_code = 32
+        elif 65374 >= inside_code >= 65281:  # 全角字符（除空格）根据关系转化
+            inside_code -= 65248
+        b_str += chr(inside_code)
+    return b_str
 # 清洗字符串
 httpcom = re.compile(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+')  # 匹配连接
-fil = re.compile(u'[^0-9a-zA-Z\u4e00-\u9fa5.， ,\-。%《*》•、&＆(—)（+）：？!！“”·]+', re.UNICODE) # 匹配非法字符
+fil = re.compile(u'[^0-9a-zA-Z\u4e00-\u9fa5.， ,\-。%《*》•、&＆(—)（+）：？!！“”·]+') # 匹配非法字符
 space = re.compile(r' +') # 将一个以上的空格替换成一个空格
 link = re.compile(r'www.(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+') # 匹配网址
 repeat = re.compile(r'(.)\1{5,}') # 超过6个以上的连续字符匹配掉比如......，人人人人人人
@@ -55,15 +65,21 @@ repeat = re.compile(r'(.)\1{5,}') # 超过6个以上的连续字符匹配掉比�
 
 
 def clean_text(raw):
-    raw = SBC2DBC(raw)
+   # raw = SBC2DBC(raw)
+    raw = q_to_b(raw)
     raw = httpcom.sub('', raw)
-    raw = fil.sub('', raw)
+    #raw = fil.sub('', raw)
     raw = space.sub(' ', raw)
     raw = link.sub('', raw)
     raw = repeat.sub('', raw)
     raw = raw.replace('...', '。').replace('！ ！ ！', '！').replace('！ 。', '！').replace('？ 。', '？')
     raw=replace_html(raw)
     return raw
+
+def clean_entity(entity):
+    entity =entity.strip()
+    entity = entity.lower()
+    return entity
 
 def clean_entity(entity):
     entity =entity.strip()
@@ -173,6 +189,7 @@ def run(flag):
 
 def get_agg_data(path):
     df = pd.read_pickle(path)
+    print(df.shape)
     df = make_new_df(df)
     df['texts'] = df.apply(lambda x:x['title']+'。'+x['content'],axis=1)
     print(df.shape)
@@ -225,10 +242,10 @@ def main():
     # run(flag='train')
     # run(flag='test')
 
-    # get_agg_data(root_path+'data2/coreEntityEmotion_train.txt.pick')
-    # get_agg_data(root_path+'data2/coreEntityEmotion_test_stage1.txt.pick')
+    get_agg_data(root_path+'data/coreEntityEmotion_train.txt.pick')
+    get_agg_data(root_path+'data/coreEntityEmotion_test_stage1.txt.pick')
 
-    get_filter_entity_data(root_path+'data2/coreEntityEmotion_train.txt.pick')
-    get_filter_entity_data(root_path+'data2/coreEntityEmotion_test_stage1.txt.pick')
+    #get_filter_entity_data(root_path+'data2/coreEntityEmotion_train.txt.pick')
+    #get_filter_entity_data(root_path+'data2/coreEntityEmotion_test_stage1.txt.pick')
 if __name__ == '__main__':
     main()
