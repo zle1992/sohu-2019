@@ -367,10 +367,10 @@ def title_50():
     #0.544
     path2='../BERT-BiLSTM-CRF-NER/second_model/title/50_no_agg_233_new/bert_res.txt.all_pred.csv'
     #0.566
-    path3='../BERT-BiLSTM-CRF-NER/second_model/title/50_no_agg_233_new2/bert_res.txt.all_pred.csv'
+    #path3='../BERT-BiLSTM-CRF-NER/second_model/title/50_no_agg_233_new2/bert_res.txt.all_pred.csv'
 
     paths2 = [
-    path3,
+    path2,
     ]
     run(paths1,paths2,'title')
     

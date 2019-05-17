@@ -10,8 +10,8 @@ import sys
 from six.moves import urllib
 
 root_path = './'
-
 special_dic=['\u2002','\u2003','\u3000','\u2028']
+
 def replace_html(s):
     s = s.replace('&quot;','"')
     s = s.replace('&amp;','&')
@@ -61,21 +61,21 @@ httpcom = re.compile(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9
 space = re.compile(r' +') # 将一个以上的空格替换成一个空格
 link = re.compile(r'www.(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+') # 匹配网址
 repeat = re.compile(r'(.)\1{5,}') # 超过6个以上的连续字符匹配掉比如......，人人人人人人
-mm = re.compile(r"[()（）\\n *  %《*》•、&＆(—)（+）：“” 【】]+")
+mm = re.compile("[()（）\\n *  %《*》•、&＆(—)（+）：“”【】]+")
 
 
 def clean_text(raw):
     raw = q_to_b(raw)
+    raw = mm.sub('', raw)
     raw = httpcom.sub('', raw)
     raw = space.sub(' ', raw)
     raw = link.sub('', raw)
     raw = repeat.sub('', raw)
     raw = raw.replace('...', '。').replace('！ ！ ！', '！').replace('！ 。', '！').replace('？ 。', '？')
     raw=replace_html(raw)
-    raw = mm.sub('', raw)
+    raw = raw.replace('[', '').replace(']','')
     raw = raw.replace(',', '，')
     return raw
-
 def clean_entity(entity):
     entity =entity.strip()
     entity = entity.lower()
