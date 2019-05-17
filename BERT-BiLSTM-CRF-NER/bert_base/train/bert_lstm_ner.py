@@ -342,7 +342,7 @@ class SOHUNERProcessor(DataProcessor):
 
 
     if FLAGS.title_only:
-        print(df_test[['entity','title','entity_sub']].head())
+        print(df_test[['entity','entity_sub']].head())
 
     else:
         print(df_test[['entity','entity_sub']].head())

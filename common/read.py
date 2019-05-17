@@ -7,7 +7,9 @@ import numpy as np
 import os
 #import jieba
 import sys
-root_path = '/home/gpu401/lab/bigdata/sohu-2019/'
+from six.moves import urllib
+
+root_path = './'
 
 special_dic=['\u2002','\u2003','\u3000','\u2028']
 def replace_html(s):
@@ -56,34 +58,28 @@ def q_to_b(q_str):
     return b_str
 # 清洗字符串
 httpcom = re.compile(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+')  # 匹配连接
-fil = re.compile(u'[^0-9a-zA-Z\u4e00-\u9fa5.， ,\-。%《*》•、&＆(—)（+）：？!！“”·]+') # 匹配非法字符
 space = re.compile(r' +') # 将一个以上的空格替换成一个空格
 link = re.compile(r'www.(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+') # 匹配网址
 repeat = re.compile(r'(.)\1{5,}') # 超过6个以上的连续字符匹配掉比如......，人人人人人人
-
-
+mm = re.compile(r"[()（）\\n *  %《*》•、&＆(—)（+）：“” 【】]+")
 
 
 def clean_text(raw):
-   # raw = SBC2DBC(raw)
     raw = q_to_b(raw)
     raw = httpcom.sub('', raw)
-    #raw = fil.sub('', raw)
     raw = space.sub(' ', raw)
     raw = link.sub('', raw)
     raw = repeat.sub('', raw)
     raw = raw.replace('...', '。').replace('！ ！ ！', '！').replace('！ 。', '！').replace('？ 。', '？')
     raw=replace_html(raw)
+    raw = mm.sub('', raw)
+    raw = raw.replace(',', '，')
     return raw
 
 def clean_entity(entity):
     entity =entity.strip()
     entity = entity.lower()
-    return entity
-
-def clean_entity(entity):
-    entity =entity.strip()
-    entity = entity.lower()
+    entity=clean_text(entity)
     return entity
 
 
@@ -181,7 +177,7 @@ def run(flag):
         df=df.append(df_sample, ignore_index=True)
     else:
         out_path = root_path+'data2/coreEntityEmotion_test_stage1.txt'+'.pick'
-        df = read_json(root_path+'/data/coreEntityEmotion_test_stage1.txt',flag)
+        df = read_json(root_path+'data/coreEntityEmotion_test_stage1.txt',flag)
 
     df['texts'] = df.apply(lambda x:x['title']+'。'+x['content'],axis=1)
     df.to_pickle(out_path,)
@@ -239,13 +235,13 @@ def get_filter_entity_data(path):
     
 def main():
 
-    # run(flag='train')
-    # run(flag='test')
+    run(flag='train')
+    run(flag='test')
 
-    get_agg_data(root_path+'data/coreEntityEmotion_train.txt.pick')
-    get_agg_data(root_path+'data/coreEntityEmotion_test_stage1.txt.pick')
+    get_agg_data(root_path+'data2/coreEntityEmotion_train.txt.pick')
+    get_agg_data(root_path+'data2/coreEntityEmotion_test_stage1.txt.pick')
 
-    #get_filter_entity_data(root_path+'data2/coreEntityEmotion_train.txt.pick')
-    #get_filter_entity_data(root_path+'data2/coreEntityEmotion_test_stage1.txt.pick')
+    get_filter_entity_data(root_path+'data2/coreEntityEmotion_train.txt.pick')
+    get_filter_entity_data(root_path+'data2/coreEntityEmotion_test_stage1.txt.pick')
 if __name__ == '__main__':
     main()

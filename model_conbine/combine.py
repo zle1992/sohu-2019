@@ -3,11 +3,7 @@ import re
 import numpy as np
 from collections import Counter
 
-def clean_texts(content):
-    content = content.strip()
-    content = content.replace(' ','')
-    content = re.sub("[\s+\.\!\/_,$%^*(+\"\')]+|[+——()?【】“”！，。？、~@#￥%……&*（）]+", "",content)
-    return content
+
 
 starDict= pd.read_csv('./dict/person.txt',names=['entity']).entity.to_list()
 starDict = {k:v for v,k in enumerate(set(starDict))}
@@ -39,6 +35,8 @@ def book(x):
     fist_baddict ={k:v for v,k in enumerate(badlist)}
     res = []
     for s in x:
+        if len(s)<1:
+            continue
         if re.search('《',s) or s[0] in fist_baddict or s[-1] in ["："] :
             pass
         else:
@@ -49,21 +47,21 @@ def book(x):
 
 
 
-def read_df(path,flag):
+def read_df(path,flag,sep=' '):
     df = pd.read_csv(path,sep='\t',names=['newsId','entity','entity_all','emtion'])
     df = df.fillna('')
 
-    #df = df.astype(str)
-    if flag =='content_title':
-        df['entity_all'] = df['entity_all'].map(lambda x:x[2:-2])
+    df = df.astype(str)
+    df['entity_all'] = df['entity_all'].map(lambda x :x.replace('\'','').replace('[','').replace(']',''))
+    # if flag =='content_title':
+    #     df['entity_all'] = df['entity_all'].map(lambda x:x[2:-2])
     
     
     #clean
-    df['entity_all']=df['entity_all'].map(lambda x: x.split())
+    df['entity_all']=df['entity_all'].map(lambda x: x.split(sep))
 
-    #df['entity_all']=df['entity_all'].map(lambda x:[clean_texts(i) for i in x.split()])
     #过滤长度为1的字符
-    df['entity_sub']=df['entity_all'].map(lambda x:[i for i in x if len(i)>1])
+    df['entity_sub']=df['entity_all'].map(lambda x:[i for i in x if x!=' '])
     
     df['entity_sub']=df['entity_sub'].map(lambda x:u200b(x))
     df['entity_sub']=df['entity_sub'].map(lambda x:book(x))
@@ -175,29 +173,34 @@ def post(x):
     x = x.split() 
     d =[]
     line = Counter(x).most_common(3)
+    #line=[(l,k) for k,l in sorted([(j,i) for i,j in Counter(x).items()], reverse=True)]
     line_cnt = float(np.array([i[1] for i in line]).sum())
     for entity_cnt in  line:
-        if len(line)>1 and entity_cnt[1]/(line_cnt+0.0001)<0.30 and entity_cnt[0] not in nerDict:
-            pass
-        else:
-            d.append(entity_cnt[0])
-    return d
-
-def post4rank(x):
-     #格式处理：c
-    x = np.array(x).flatten().tolist()
-    x=','.join(x)
-    #x = x.replace(',', '')
-    x = x.split(',') 
-    d =[]
-    line = Counter(x).most_common()
-    line_cnt = float(np.array([i[1] for i in line]).sum())
-    for entity_cnt in  line:
+        #0.30 :
+        #0.25 :   0.6469      entity_13794
+        #0.20           0.648  entity_141381.txt
+        #0.15 : 12+13: 0.591 145643.txt
         if len(line)>1 and entity_cnt[1]/(line_cnt+0.0001)<0.20 and entity_cnt[0] not in nerDict:
             pass
         else:
             d.append(entity_cnt[0])
-    return d
+    return d[:3]
+
+# def post4rank(x):
+#      #格式处理：c
+#     x = np.array(x).flatten().tolist()
+#     x=','.join(x)
+#     #x = x.replace(',', '')
+#     x = x.split(',') 
+#     d =[]
+#     line = Counter(x).most_common()
+#     line_cnt = float(np.array([i[1] for i in line]).sum())
+#     for entity_cnt in  line:
+#         if len(line)>1 and entity_cnt[1]/(line_cnt+0.0001)<0.20 and entity_cnt[0] not in nerDict:
+#             pass
+#         else:
+#             d.append(entity_cnt[0])
+#     return d
 
 
 
@@ -205,12 +208,12 @@ def post4rank(x):
 
 
 
-def run(paths,flag):
+def run(paths1,paths2,flag):
     df_sub=pd.DataFrame()
     
-    for i,path in enumerate(paths):
+    for i,path in enumerate(paths1):
         print(path)
-        df3 = read_df(path,flag)
+        df3 = read_df(path,flag,sep=' ')
         print(df3.head())
         if i==0:
             df_sub['newsId'] =df3['newsId']
@@ -218,7 +221,23 @@ def run(paths,flag):
         else:
             df_sub['entity_all'] +=df3['entity_sub']
             df_sub['newsId'] =df3['newsId']
-         
+    if paths2 :
+        for i,path in enumerate(paths2):
+            print(path)
+
+            df3 = read_df(path,flag,sep=',')
+            print(df3.head())
+            if len(paths1)==0 and i==0:
+                df_sub['newsId'] =df3['newsId']
+                df_sub['entity_all'] = df3['entity_sub']
+            else:
+                df_sub['entity_all'] +=df3['entity_sub']
+                df_sub['newsId'] =df3['newsId']
+
+    rules(df_sub)
+
+
+def rules(df_sub):         
     print(df_sub.head())
     #过滤长度为1的字符
     df_sub['entity_all']=df_sub['entity_all'].map(lambda x:[i for i in x if len(i)>1])
@@ -274,7 +293,25 @@ def all_500():
         
     #no_agg_234_lstm_512_138740  0.636
     path13 = root_path+'output_500_no_agg_234_lstm_512/bert_res.txt.all_pred.csv'
-    paths =[
+
+
+    root_path = '../BERT-BiLSTM-CRF-NER/fist_state_model/new_agg/'
+
+
+    path14 = root_path+'output_500_agg_234/bert_res.txt.all_pred.csv'
+
+    path15 = root_path+'output_500_agg_234_lstm_56/bert_res.txt.all_pred.csv'
+
+    root_path = '../BERT-BiLSTM-CRF-NER/second_model/agg/'
+    
+
+    path16 = root_path+'output_500_agg_234_lstm_256/bert_res.txt.all_pred.csv'
+
+   # path17 = root_path+'output_500_agg_234_lstm_56/bert_res.txt.all_pred.csv'
+   # 0.49
+    #'../BERT-BiLSTM-CRF-NER/fist_state_model/new_agg/output_500_agg_234_lstm_56/bert_res.txt.all_pred.csv'
+    path18='../BERT-BiLSTM-CRF-NER/second_model/content_title/output_500_no_agg_234_lstm_128/bert_res.txt.all_pred.csv'
+    paths1 =[
     #path3,
     #path4,
     #path5,
@@ -283,12 +320,23 @@ def all_500():
     #path10,
     path12,
     path13,
+    
     ]
+
+
 
     #346  entity_160361  0.61163816
     #6 12  entity_144337  0.63094
+    #12 13 0.645
 
-    return paths
+
+    paths2 =[
+
+    #path14,
+    #path16,
+    path18,
+    ]
+    run(paths1,paths2,'content_title')
 
 
 
@@ -303,20 +351,33 @@ def title_50():
     #0.5939
     path4='../BERT-BiLSTM-CRF-NER/title_50_233_lstm_256/bert_res.txt.all_pred.csv'
 
-   
-    paths =[
+    
+
+    paths1 =[
     #path1,
     #path2,
-    path3,
-    path4,
+    #path3,
+    #path4,
+    
     ]
+    
+    #0.574 5eoch
+    path1='../BERT-BiLSTM-CRF-NER/second_model/title/50_no_agg_233/bert_res.txt.all_pred.csv'
+    
+    #0.544
+    path2='../BERT-BiLSTM-CRF-NER/second_model/title/50_no_agg_233_new/bert_res.txt.all_pred.csv'
+    #0.566
+    path3='../BERT-BiLSTM-CRF-NER/second_model/title/50_no_agg_233_new2/bert_res.txt.all_pred.csv'
 
-
-    return paths
+    paths2 = [
+    path3,
+    ]
+    run(paths1,paths2,'title')
+    
 def main():
-    paths = all_500()
-    #paths = title_50()
-    run(paths,'content_title')
+    #pall_500()
+    title_50()
+    #run(paths,'content_title')
 
 if __name__ == '__main__':
     main()

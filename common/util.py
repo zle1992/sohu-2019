@@ -83,24 +83,40 @@ def result_to_json_234(string, tags, ):
     return item
 
 def result_to_json_233(string, tags, ):
-
-    item = {"string": string, "entities": []}
+    """
+    将模型标注序列和输入序列结合 转化为结果
+    :param string: 输入序列
+    :param tags: 标注结果
+    :return:
+    """
+    item = {"entities": []}
     entity_name = ""
+    entity_start = 0
     idx = 0
+    last_tag = ''
 
-    for i, (char, tag) in enumerate(zip(string, tags)):
+    for char, tag in zip(string, tags):
         if tag[0] == "S":
-            item["entities"].append({"word": char, "start": idx, "end": idx + 1, "type": tag[2:]})
+            item["entities"].append({"word": char, "start": idx, "end": idx+1, "type":tag[2:]})
         elif tag[0] == "B":
+            if entity_name != '':
+                item["entities"].append({"word": entity_name, "start": entity_start, "end": idx, "type": last_tag[2:]})
+                entity_name = ""
             entity_name += char
-            for j in range(i + 1, len(tags)):
-                entity_name += string[j]
-                if tags[j][0] == 'I':
-                    item["entities"].append({"word": entity_name, "start": idx, "end": j + 1, "type": tag[2:]})
-                else:
-                    break
+            entity_start = idx
+        elif tag[0] == "I":
+            entity_name += char
+        elif tag[0] == "O":
+            if entity_name != '':
+                item["entities"].append({"word": entity_name, "start": entity_start, "end": idx, "type": last_tag[2:]})
+                entity_name = ""
+        else:
             entity_name = ""
+        entity_start = idx
         idx += 1
+        last_tag = tag
+    if entity_name != '':
+        item["entities"].append({"word": entity_name, "start": entity_start, "end": idx, "type": last_tag[2:]})
     return item
 
 
