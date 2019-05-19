@@ -860,8 +860,13 @@ def main(_):
         predict_file = os.path.join(FLAGS.output_dir, "predict.tf_record")
         
         
-        if FLAGS.testisdev:
-            predict_file = os.path.join(FLAGS.output_dir, "predict_dev.tf_record")
+ 
+        if FLAGS.testisdev or FLAGS.trainisdev:
+            if FLAGS.testisdev:
+                predict_file = os.path.join(FLAGS.output_dir, "predict_dev.tf_record")
+            if  FLAGS.trainisdev:
+                predict_file = os.path.join(FLAGS.output_dir, "predict_train.tf_record")
+            
             filed_based_convert_examples_to_features(predict_examples, label_list,
                                                              FLAGS.max_seq_length, tokenizer,
                                                          predict_file, FLAGS.output_dir, mode="test")
