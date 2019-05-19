@@ -195,24 +195,25 @@ from collections import Counter
 def post(x):
     #格式处理：c
     x = np.array(x).flatten().tolist()
-    x=','.join(x)
-    x = x.split(',') 
+#     x=','.join(x)
+#     x = x.split(',') 
     #过滤
 
     return[i[0] for i in  Counter(x).most_common(3)]
 
 def postposs(df,):
   '''
-
+    input:df['entity_all'][0] : 'a,a,a,a,a'
+    output:same
   聚合结果
   '''
 
-  df.fillna(' ',inplace=False)
+  df.fillna('',inplace=False)
   print(list(df))
-  feat_agg = ['entity_pred','entity',]
+  feat_agg = ['entity_all','entity',]
   gg = df.groupby(['newsId'])
   df_agg = gg[feat_agg[0]].apply(lambda x:','.join(x)).reset_index()
-  for f in feat_agg:
+  for f in feat_agg[1:]:
       df_agg[f] = gg[f].apply(list).reset_index()[f]
   df_agg['entity']= df_agg['entity'].map(lambda x:x[0])
   print(list(df_agg))

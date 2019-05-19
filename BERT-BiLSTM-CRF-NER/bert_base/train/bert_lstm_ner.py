@@ -12,13 +12,14 @@ import sys
 sys.path.append('../../../../')
 sys.path.append('../../../../common')
 from util import *
-
+from post_rule import df_submit
 
 sys.path.append('../../../bert_base/bert')
 import modeling, optimization,tokenization
 # import
 from models import create_model, InputFeatures, InputExample
 import tf_metrics
+from collections import Counter
 
 # from bert_base.train import tf_metrics
 # from bert_base.bert import modeling, optimization,tokenization
@@ -290,7 +291,13 @@ class SOHUNERProcessor(DataProcessor):
 
   def _create_examples(self, df, set_type):
     """Creates examples for the training and dev sets."""
-
+        #         lines 
+    #         [
+    #         ['O  O O O B-LOC B-LOC O B-LOC B- O O', '你 好 啊 啊 啊 啊 '],
+    #         ['O  O O O B-LOC B-LOC O B-LOC B- O O', '你 好 啊 啊 啊 啊 ']
+    #         ]
+    #         """
+        
     examples = []
 
     for (i, line) in df.iterrows():
@@ -316,31 +323,18 @@ class SOHUNERProcessor(DataProcessor):
 
     logging.info("res[0]:%s"%(res[0]))
     logging.info('submit res len:%d'%len(res))
-    df_test['entity_pred']=res
+    df_test['entity_all']=res
 
     #聚合结果
     df_test=postposs(df_test)
-
-    df_test['entity_sub'] = df_test['entity_pred'].map(lambda x:post(x))
-
+    
     logging.info('entity_sub:%d'%len(res))
-
     logging.info('predict res:')
     
-
-
-
-    df_test['entity_sub'] = df_test['entity_sub'].map(lambda x:[i for i in x if i!=''])
-
-    #print(df_test['entity_sub'].map(lambda x:len(x)))
-
-    df_test['emotion_pred']=df_test.apply(lambda x:['POS']*len(x['entity_sub']),axis=1)
     
-
-    df_test['entity_sub'] = df_test['entity_sub'].map(lambda x:','.join(x))
-    df_test['emotion_pred'] = df_test['emotion_pred'].map(lambda x:','.join(x))
-
-
+    df_test['entity_all']=df_test['entity_all'].map(lambda x:x.split(','))
+    
+    df_test,entity_num = df_submit(df_test,'bert')
     if FLAGS.title_only:
         print(df_test[['entity','entity_sub']].head())
 
@@ -353,81 +347,34 @@ class SOHUNERProcessor(DataProcessor):
       reals = df_test.entity.values
       preds = df_test.entity_sub.values
       p,r,f1=score(reals,preds)
-      output_predict_file = os.path.join(FLAGS.output_dir, "bert_dev_ortrain.txt")
+      if FLAGS.testisdev:
+        output_predict_file = os.path.join(FLAGS.output_dir, "bert_dev.all_pred.%d.csv"%(entity_num))
+      else:
+        output_predict_file = os.path.join(FLAGS.output_dir, "bert_train.all_pred.%d.csv"%(entity_num))
       
-      df_test[['newsId','entity','entity_sub','entity_pred']].to_csv(output_predict_file, sep='\t',index=False,header=False)
+      df_test[['newsId','entity','entity_sub','entity_all']].to_csv(output_predict_file, sep='\t',index=False,header=False)
 
     else:
       
-      output_predict_file = os.path.join(FLAGS.output_dir, "bert_res.txt")
+      output_predict_file = os.path.join(FLAGS.output_dir, "bert_res.txt.%d.csv"%(entity_num))
       
       path = FLAGS.root_path+'/data/coreEntityEmotion_sample_submission_v2.txt'
       df1 =pd.read_csv(path,names=['newsId','entity','emotion'],sep='\t')
 
 
-        
-
       df_test = pd.merge(df1[['newsId']],df_test[['newsId','entity_sub','emotion_pred','entity_pred']],how='left')
 
-      df_test[['newsId','entity_sub','entity_pred','emotion_pred']].to_csv(output_predict_file+'.all_pred.csv',sep='\t',index=False,header=False)
+      df_test[['newsId','entity_sub','entity_all','emotion_pred']].to_csv(output_predict_file+'.all_pred.csv'(entity_num),sep='\t',index=False,header=False)
 
       df_test[['newsId','entity_sub','emotion_pred']].to_csv(output_predict_file, sep='\t',index=False,header=False)
 
       logging.info('test_predict done! and save in %s'%(output_predict_file))
 
 
-# class NerProcessor(DataProcessor):
-#     def __init__(self, output_dir):
-#         self.labels = set()
-#         self.output_dir = output_dir
 
-#     def get_train_examples(self, data_dir):
-#         return self._create_example(
-#              get_train_data(), "train"
-#         )
 
-#     def get_dev_examples(self, data_dir):
-#         return self._create_example(
-#            get_dev_data(), "dev"
-#         )
 
-#     def get_test_examples(self, data_dir):
-# #         return self._create_example(
-# #             self._read_data(os.path.join(data_dir, "test.txt")), "test")
-    
-#         return self._create_example(
-#             get_test_data(), "test")
 
-#     def get_labels(self, labels=None):
-    
-#         #self.labels =# set(["O", 'B-TIM', 'I-TIM', "B-PER", "I-PER", "B-ORG", "I-ORG", "B-LOC", "I-LOC", "X", "[CLS]", "[SEP]"])
-#         self.labels = set(['0','1','2','3',"[CLS]", "[SEP]"])
-#         return self.labels
-
-#     def _create_example(self, lines, set_type):
-#         examples = []
-#         logging.error('lines[0]')
-
-#         print(lines[0])
-#         for (i, line) in enumerate(lines):
-#             guid = "%s-%s" % (set_type, i)
-#             text = tokenization.convert_to_unicode(line[1])
-#             label = tokenization.convert_to_unicode(line[0])
-#             examples.append(InputExample(guid=guid, text=text, label=label))
-#         return examples
-
-#     def _read_data(self, input_file):
-#         """Reads a BIO data.
-
-#         lines 
-#         [
-#         ['O  O O O B-LOC B-LOC O B-LOC B- O O', '你 好 啊 啊 啊 啊 '],
-#         ['O  O O O B-LOC B-LOC O B-LOC B- O O', '你 好 啊 啊 啊 啊 ']
-#         ]
-#         """
-        
-#         lines =[]
-#         return lines
 
 
 def write_tokens(tokens, output_dir, mode):
