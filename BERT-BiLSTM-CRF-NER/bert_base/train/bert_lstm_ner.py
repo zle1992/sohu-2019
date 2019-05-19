@@ -335,11 +335,9 @@ class SOHUNERProcessor(DataProcessor):
     df_test['entity_all']=df_test['entity_all'].map(lambda x:x.split(','))
     
     df_test,entity_num = df_submit(df_test,'bert')
-    if FLAGS.title_only:
-        print(df_test[['entity','entity_sub']].head())
 
-    else:
-        print(df_test[['entity','entity_sub']].head())
+    
+    print(df_test[['entity','entity_sub']].head())
 
 
     if FLAGS.testisdev or FLAGS.trainisdev:
@@ -349,14 +347,14 @@ class SOHUNERProcessor(DataProcessor):
       p,r,f1=score(reals,preds)
       if FLAGS.testisdev:
         output_predict_file = os.path.join(FLAGS.output_dir, "bert_dev.all_pred.%d.csv"%(entity_num))
-      else:
+      if FLAGS.trainisdev:
         output_predict_file = os.path.join(FLAGS.output_dir, "bert_train.all_pred.%d.csv"%(entity_num))
       
       df_test[['newsId','entity','entity_sub','entity_all']].to_csv(output_predict_file, sep='\t',index=False,header=False)
 
     else:
       
-      output_predict_file = os.path.join(FLAGS.output_dir, "bert_res.txt.%d.csv"%(entity_num))
+      output_predict_file = os.path.join(FLAGS.output_dir, "bert_res.txt")
       
       path = FLAGS.root_path+'/data/coreEntityEmotion_sample_submission_v2.txt'
       df1 =pd.read_csv(path,names=['newsId','entity','emotion'],sep='\t')
@@ -364,7 +362,7 @@ class SOHUNERProcessor(DataProcessor):
 
       df_test = pd.merge(df1[['newsId']],df_test[['newsId','entity_sub','emotion_pred','entity_pred']],how='left')
 
-      df_test[['newsId','entity_sub','entity_all','emotion_pred']].to_csv(output_predict_file+'.all_pred.csv'(entity_num),sep='\t',index=False,header=False)
+      df_test[['newsId','entity_sub','entity_all','emotion_pred']].to_csv(output_predict_file+'.all_pred.csv',sep='\t',index=False,header=False)
 
       df_test[['newsId','entity_sub','emotion_pred']].to_csv(output_predict_file, sep='\t',index=False,header=False)
 
