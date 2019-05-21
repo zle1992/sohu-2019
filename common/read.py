@@ -237,13 +237,13 @@ def get_filter_entity_data(path):
 
 def main():
 
-#     run(flag='train')
-#     run(flag='test')
+    run(flag='train')
+    run(flag='test')
 
-#     get_agg_data(root_path+'data2/coreEntityEmotion_train.txt.pick')
-#     get_agg_data(root_path+'data2/coreEntityEmotion_test_stage1.txt.pick')
+    get_agg_data(root_path+'data2/coreEntityEmotion_train.txt.pick')
+    get_agg_data(root_path+'data2/coreEntityEmotion_test_stage1.txt.pick')
 
-#     get_filter_entity_data(root_path+'data2/coreEntityEmotion_train.txt.pick')
+    get_filter_entity_data(root_path+'data2/coreEntityEmotion_train.txt.pick')
 #     get_filter_entity_data(root_path+'data2/coreEntityEmotion_test_stage1.txt.pick')
 if __name__ == '__main__':
     main()

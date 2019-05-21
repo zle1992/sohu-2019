@@ -7,7 +7,7 @@ import sys
 
 sys.path.append('./common')
 from post_rule import rule4all,rule4sub,df_submit
-
+from read import clean_entity
 
 def read_df(path,flag,sep=' '):
     df = pd.read_csv(path,sep='\t',names=['newsId','entity','entity_all','emtion'])
@@ -16,6 +16,7 @@ def read_df(path,flag,sep=' '):
     df = df.astype(str)
     df['entity_all'] = df['entity_all'].map(lambda x :x.replace('\'','').replace('[','').replace(']',''))
     df['entity_all']=df['entity_all'].map(lambda x: x.split(sep))
+    df['entity_all']= df['entity_all'].map(lambda x:[clean_entity(i) for i in x])
 
     df=rule4all(df)  
 
@@ -53,23 +54,7 @@ def merge_df(paths1,paths2,flag):
 
 
 def all_500():
-    root_path = '../BERT-BiLSTM-CRF-NER/fist_state_model/content_title/'
-    
-    #no_agg_233_165628.txt   0.601
-    path3=root_path+'output_500_no_agg_233/bert_res.txt.all_pred.csv'
-    #no_agg_234_138744     0.609
-    path4=root_path+'output_500_no_agg_234/bert_res.txt.all_pred.csv'
-    #only_ctf
-    path5=root_path+'output_500_agg_234/bert_res.txt.all_pred.csv'
-
-    #    no_agg_234_lstm_128_151728 0.6161
-    path6=root_path+'output_500_no_agg_234_lstm_5epoch/bert_res.txt.all_pred.csv'
-
-    #lstm 128
-    path7=root_path+'output_500_agg_234_lstm/bert_res.txt.all_pred.csv'
-    #lstm 128
-    path10=root_path+'output_500_agg_233_lstm/bert_res.txt.all_pred.csv'
-
+    root_path = 'BERT-BiLSTM-CRF-NER/fist_state_model/content_title/'
 
     #no_agg_234_256_134810   0.631
     path12=root_path+'output_500_no_agg_234_lstm_256/bert_res.txt.all_pred.csv'
@@ -78,24 +63,15 @@ def all_500():
     path13 = root_path+'output_500_no_agg_234_lstm_512/bert_res.txt.all_pred.csv'
 
 
-    root_path = '../BERT-BiLSTM-CRF-NER/fist_state_model/new_agg/'
+    root_path = 'BERT-BiLSTM-CRF-NER/second_model/content_title/'
 
 
-    path14 = root_path+'output_500_agg_234/bert_res.txt.all_pred.csv'
-
-    path15 = root_path+'output_500_agg_234_lstm_56/bert_res.txt.all_pred.csv'
-
-    root_path = '../BERT-BiLSTM-CRF-NER/second_model/agg/'
-    
-
-    path16 = root_path+'output_500_agg_234_lstm_256/bert_res.txt.all_pred.csv'
-
-   # path17 = root_path+'output_500_agg_234_lstm_56/bert_res.txt.all_pred.csv'
-   # 0.49
-    #'../BERT-BiLSTM-CRF-NER/fist_state_model/new_agg/output_500_agg_234_lstm_56/bert_res.txt.all_pred.csv'
-    path18='./BERT-BiLSTM-CRF-NER/second_model/content_title/output_500_no_agg_234_3epoch/bert_res.txt.all_pred.csv'
-    path19='./BERT-BiLSTM-CRF-NER/second_model/content_title/output_500_no_agg_234/bert_res.txt.all_pred.csv'
-    path20='./BERT-BiLSTM-CRF-NER/second_model/content_title/output_500_no_agg_233_3epoch/bert_res.txt.all_pred.csv'
+    path17=  root_path+'output_500_no_agg_233/bert_res.txt.all_pred.csv'
+    path18= root_path+'output_500_no_agg_234_3epoch/bert_res.txt.all_pred.csv'
+    path19= root_path+'output_500_no_agg_234/bert_res.txt.all_pred.csv'
+    path20=root_path+'output_500_no_agg_233_3epoch/bert_res.txt.all_pred.csv'
+    root_path = 'BERT-BiLSTM-CRF-NER/second_model/filter_c_t/'
+    path21=root_path+'output_500_no_agg_234/bert_res.txt.all_pred.csv'
     paths1 =[
     #path3,
     #path4,
@@ -117,10 +93,10 @@ def all_500():
 
     paths2 =[
 
-    #path14,
-    #path18,
-    #path19,
-    path20,
+    # path17,
+    # path18,
+    # path19,
+    path21,
     ]
     run(paths1,paths2,'content_title')
 
@@ -160,9 +136,86 @@ def title_50():
     run(paths1,paths2,'title')
     
     
+from six.moves import urllib
+
+root_path = './'
+special_dic=['\u2002','\u2003','\u3000','\u2028']
+
+def replace_html(s):
+    s = s.replace('&quot;','"')
+    s = s.replace('&amp;','&')
+    s = s.replace('&lt;','<')
+    s = s.replace('&gt;','>')
+    s = s.replace('&nbsp;',' ')
+    s = s.replace("&ldquo;", "“")
+    s = s.replace("&rdquo;", "”")
+    s = s.replace("&mdash;","")
+    s = s.replace("\xa0", " ")
+    for tmp in special_dic:
+        s = s.replace(tmp,' ')
+    def _func(matched):
+        return urllib.parse.unquote(matched.group(0))    
+    patt = re.compile('(%[0-9a-fA-F]{2})+')
+    s = re.sub(patt, _func, s)
+    return(s)  
+
+ 
+ #' 半角转全角 
+def SBC2DBC(ustring):
+    rstring = ""
+    for uchar in ustring:
+        inside_code = ord(uchar)
+        if inside_code == 0x0020:
+            inside_code = 0x3000
+        else:
+            if not (0x0021 <= inside_code and inside_code <= 0x7e):
+                rstring += uchar
+                continue
+            inside_code += 0xfee0
+        rstring += chr(inside_code)
+    return rstring
+# 全角转半角
+def q_to_b(q_str):
+    b_str = ""
+    for uchar in q_str:
+        inside_code = ord(uchar)
+        if inside_code == 12288:  # 全角空格直接转换
+            inside_code = 32
+        elif 65374 >= inside_code >= 65281:  # 全角字符（除空格）根据关系转化
+            inside_code -= 65248
+        b_str += chr(inside_code)
+    return b_str
+# 清洗字符串
+httpcom = re.compile(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+')  # 匹配连接
+space = re.compile(r' +') # 将一个以上的空格替换成一个空格
+link = re.compile(r'www.(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+') # 匹配网址
+repeat = re.compile(r'(.)\1{5,}') # 超过6个以上的连续字符匹配掉比如......，人人人人人人
+mm = re.compile("[()（）\\n *  %《*》•、&＆(—)（+）：“”【】]+")
+
+
+def clean_text(raw):
+    raw = q_to_b(raw)
+    raw = mm.sub('', raw)
+    raw = httpcom.sub('', raw)
+    raw = space.sub(' ', raw)
+    raw = link.sub('', raw)
+    raw = repeat.sub('', raw)
+    raw = raw.replace('...', '。').replace('！ ！ ！', '！').replace('！ 。', '！').replace('？ 。', '？')
+    raw=replace_html(raw)
+    raw = raw.replace('[', '').replace(']','')
+    raw = raw.replace(',', '，')
+    return raw
+def clean_entity(entity):
+    entity =entity.strip()
+    entity = entity.lower()
+    entity=clean_text(entity)
+    return entity
+    
 def run(paths1,paths2,flag):
   
     df_sub =merge_df(paths1,paths2,flag)
+
+    df_sub['entity_all'] = df_sub['entity_all'].map(lambda x:[clean_entity(u) for u in x])
     out_dir ='model_combine/output/combine_'
     df_sub ,entity_num=df_submit(df_sub)
     df_sub[['newsId','entity_sub','emotion_pred']].to_csv(out_dir+'entity_%d.txt'%entity_num, sep='\t',index=False,header=False)
@@ -170,6 +223,5 @@ def main():
     all_500()
     #title_50()
     #run(paths,'content_title')
-
 if __name__ == '__main__':
     main()

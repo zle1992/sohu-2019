@@ -40,6 +40,21 @@ import os
 #config.gpu_options.allow_growth = True      #程序按需申请内存  
 #sess = tf.Session(config = config)
 
+
+
+K=3
+import sklearn
+from sklearn.model_selection import KFold
+kf = KFold(n_splits=5, shuffle=True,random_state=2018)
+train_indexs = []   
+for train_index, test_index in kf.split(range(41305)):
+    train_indexs.append(train_index)
+
+
+
+
+
+
 flags = tf.flags
 
 FLAGS = flags.FLAGS
@@ -128,8 +143,10 @@ flags.DEFINE_bool("do_lower_case", True, "Whether to run eval on the dev set.")
 flags.DEFINE_bool("clean", None, "Whether to run eval on the dev set.")
 
 flags.DEFINE_bool("crf_only", True, "Whether tcrf_only.")
-flags.DEFINE_bool("title_only", False, "Whether title_only.")
 flags.DEFINE_bool("bert_only", True, "Whether bert_only.")
+flags.DEFINE_string("text_model", 'texts', "Whether text_model.")
+
+
 flags.DEFINE_string(
     "ner", "sohuner",
     "The input data dir. Should contain the .tsv files (or other data files) "
@@ -204,12 +221,12 @@ class SOHUNERProcessor(DataProcessor):
     df = df[df.apply(lambda x:find(x,sep=FLAGS.sep),axis=1)]
       
     return df
-  def df_process(self,df):
+  def df_process(self,df,text_model):
     df.fillna('null',inplace=True)
     df =df.astype(str)
     logging.info(list(df))
-    if FLAGS.title_only :
-      df['texts']=df['title']
+
+    df['texts']=df[text_model]
 
     if FLAGS.rep==' ':    
         
@@ -241,9 +258,9 @@ class SOHUNERProcessor(DataProcessor):
     self.train_df = pd.read_pickle(train_path)
 
     k = int(len(self.train_df)*0.05)
-    train_df = self.train_df[:-k].sample(frac =1,random_state=2019)
-
-    train_df = self.df_process(train_df)
+    #train_df = self.train_df[:-k].sample(frac =1,random_state=2019)
+    train_df= self.train_df.iloc[train_indexs[K],:]
+    train_df = self.df_process(train_df,text_model='texts')
     #train_df=self.title_filter(train_df)
 
     return self._create_examples(train_df,"train")
@@ -253,7 +270,7 @@ class SOHUNERProcessor(DataProcessor):
     k = int(len(self.train_df)*0.05)
 
     dev_df = self.train_df[-k:].sample(frac =1,random_state=2019)
-    dev_df = self.df_process(dev_df)
+    dev_df = self.df_process(dev_df,text_model=FLAGS.text_model)
     #dev_df=self.title_filter(dev_df)
     return self._create_examples(dev_df, "dev")
 
@@ -276,7 +293,7 @@ class SOHUNERProcessor(DataProcessor):
         self.test_df = pd.read_pickle(test_path)
 
 
-    self.test_df = self.df_process(self.test_df)
+    self.test_df = self.df_process(self.test_df,FLAGS.text_model)
     return self._create_examples(self.test_df, "test")
 
   def get_labels(self):
@@ -360,7 +377,7 @@ class SOHUNERProcessor(DataProcessor):
       df1 =pd.read_csv(path,names=['newsId','entity','emotion'],sep='\t')
 
 
-      df_test = pd.merge(df1[['newsId']],df_test[['newsId','entity_sub','emotion_pred','entity_pred']],how='left')
+      df_test = pd.merge(df1[['newsId']],df_test[['newsId','entity_sub','emotion_pred','entity_all']],how='left')
 
       df_test[['newsId','entity_sub','entity_all','emotion_pred']].to_csv(output_predict_file+'.all_pred.csv',sep='\t',index=False,header=False)
 
