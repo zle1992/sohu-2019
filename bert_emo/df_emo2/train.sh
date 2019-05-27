@@ -21,7 +21,7 @@ nohup python ./bert/run_classifier.py \
   --do_train=False \
   --do_eval=True \
   --do_predict=True \
-  --data_dir=$GLUE_DIR/MRPC \
+  --data_dir=$root_dir \
   --vocab_file=$BERT_BASE_DIR/vocab.txt \
   --bert_config_file=$BERT_BASE_DIR/bert_config.json \
   --init_checkpoint=$BERT_BASE_DIR/bert_model.ckpt \

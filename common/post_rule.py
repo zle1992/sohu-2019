@@ -31,7 +31,7 @@ def book(x):
     去除第一个char is :
     '的','是','\\','：',"》"
     '''
-    badlist = ['的','是','\\','：',"》"]
+    badlist = ['的','是','\\','：',"》",'，','。']
     fist_baddict ={k:v for v,k in enumerate(badlist)}
     res = []
     for s in x:

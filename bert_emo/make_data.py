@@ -1,6 +1,9 @@
 import pandas as pd
 import re
-
+import sys
+sys.path.append('./common')
+from post_rule import rule4all,rule4sub,df_submit
+from collections import Counter
 
 def get_df_emotion(df):
     newlines = []
@@ -30,7 +33,7 @@ def get_df_emotion(df):
 
 def run_train():
 
-    train_path='/home/gpu401/lab/bigdata/sohu-2019/data2/coreEntityEmotion_train.txt.pick'
+    train_path='data2/coreEntityEmotion_train.txt.pick'
     out_path = train_path.replace('pick','df_emo2.csv')
 
 
@@ -45,7 +48,7 @@ def run_train():
 
 
 def run_test(path_sub):
-    test_path = '/home/gpu401/lab/bigdata/sohu-2019/data2/coreEntityEmotion_test_stage1.txt.pick'
+    test_path = 'data2/coreEntityEmotion_test_stage1.txt.pick'
 
     out_path = test_path.replace('pick','df_emo2.csv')
 
@@ -56,6 +59,13 @@ def run_test(path_sub):
     df_test = pd.merge(df_test.drop(['entity','emotion'],axis=1),df_sub,on='newsId',how='left')
     df_test['entity'] = df_test['entity'].map(lambda x:','.join(x.split(',')))
     df_test['emotion'] = df_test['emotion'].map(lambda x:','.join(x.split(',')))
+
+    df_test['entity_all'] = df_test['entity'] 
+    
+    df_test=rule4all(df_test) 
+    df_test['entity_sub']=df_test['entity_all'].map(lambda x:[i[0] for i in  Counter(x).most_common(4)])
+    df_test = rule4sub(df_test)
+
     df_emotion = get_df_emotion(df_test)
     df_emotion[['newsId','sentence','entity','emotion']].to_csv(out_path,index=False,sep='\t')
 
@@ -63,7 +73,7 @@ def run_test(path_sub):
 def main():
     
     #run_train()
-    run_test(path_sub = './bert_emo/entity_res/pred_0520_lgb_bert_merged (5).txt')
+    run_test(path_sub = './bert_emo/entity_res/pred_0521_lgb_bert_merged_kfold_final (3).txt')
     
 if __name__ == "__main__":
     main()
